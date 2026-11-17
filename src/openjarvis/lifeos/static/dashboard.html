@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JARVIS LifeOS</title>
+<style>
+:root{
+  --bg:#1c1e21;--panel:#24272b;--panel2:#2b2f34;--line:#363b41;
+  --text:#d7dbe0;--muted:#8b939c;--accent:#39d98a;--accent-dim:#1f6b47;
+  --warn:#f2c94c;--danger:#ff6b6b;--radius:8px;
+  --mono:ui-monospace,"Cascadia Mono","Consolas","SFMono-Regular",monospace;
+  --sans:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 var(--sans)}
+a{color:var(--accent)}
+.app{display:grid;grid-template-columns:210px 1fr;min-height:100vh}
+nav{background:#17191b;border-right:1px solid var(--line);padding:18px 10px;position:sticky;top:0;height:100vh}
+.brand{font:600 15px var(--mono);color:var(--accent);padding:0 10px 18px;letter-spacing:.08em}
+.brand small{display:block;color:var(--muted);font-weight:400;letter-spacing:0}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--muted);
+  padding:8px 10px;border-radius:6px;font:inherit;cursor:pointer}
+nav button:hover{color:var(--text);background:var(--panel)}
+nav button.active{color:var(--accent);background:var(--panel)}
+main{padding:22px;max-width:1200px;width:100%}
+h1{font:600 18px var(--sans);margin:0 0 16px}
+h2{font:600 13px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
+.kpi b{display:block;font:600 22px var(--mono);color:var(--accent)}
+.kpi span{color:var(--muted);font-size:12px}
+.kpi.alert b{color:var(--danger)}
+ul.list{list-style:none;margin:0;padding:0}
+ul.list li{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}
+ul.list li:last-child{border-bottom:0}
+.grow{flex:1;min-width:0;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:12px}
+.tag{font:11px var(--mono);padding:1px 6px;border-radius:4px;background:var(--panel2);color:var(--muted);white-space:nowrap}
+.tag.high,.tag.critical{color:var(--danger)}.tag.medium{color:var(--warn)}.tag.low{color:var(--accent)}
+input,select,textarea{background:#191b1e;color:var(--text);border:1px solid var(--line);border-radius:6px;
+  padding:7px 9px;font:inherit;min-width:0}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--accent);border-color:var(--accent)}
+button.btn{background:var(--accent-dim);color:#e8fff3;border:1px solid var(--accent);border-radius:6px;
+  padding:7px 12px;font:inherit;cursor:pointer;white-space:nowrap}
+button.btn:hover{background:var(--accent);color:#0c1a12}
+button.ghost{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px}
+button.ghost:hover{color:var(--text);border-color:var(--muted)}
+button.ghost.danger:hover{color:var(--danger);border-color:var(--danger)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.row>input,.row>textarea{flex:1 1 160px}
+pre.report{white-space:pre-wrap;font:13px/1.55 var(--mono);background:#191b1e;border:1px solid var(--line);
+  border-radius:var(--radius);padding:14px;margin:0;max-height:70vh;overflow:auto}
+.chat{display:grid;grid-template-columns:220px 1fr;gap:14px;height:calc(100vh - 100px)}
+.sessions{overflow:auto}
+.sessions li{cursor:pointer}
+.sessions li.active .grow{color:var(--accent)}
+.thread{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);min-height:0}
+.msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:85%;padding:9px 12px;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--accent-dim);color:#e8fff3}
+.msg.assistant{align-self:flex-start;background:var(--panel2);border-left:2px solid var(--accent)}
+.msg.sys{align-self:center;color:var(--muted);font:12px var(--mono)}
+.composer{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.composer textarea{flex:1;resize:none;height:44px}
+.hidden{display:none!important}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--panel2);border:1px solid var(--line);
+  border-left:3px solid var(--accent);padding:10px 14px;border-radius:6px;max-width:360px}
+.toast.err{border-left-color:var(--danger)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{text-align:left;padding:6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500}
+.mono{font-family:var(--mono)}
+@media (max-width:800px){
+  .app{grid-template-columns:1fr}
+  nav{position:static;height:auto;display:flex;overflow-x:auto;gap:4px;padding:8px 16px;border-right:0;border-bottom:1px solid var(--line)}
+  .brand{display:none}
+  nav button{width:auto;white-space:nowrap}
+  main{padding:16px}
+  .chat{grid-template-columns:1fr;height:auto}
+  .sessions{max-height:160px}
+  .thread{height:70vh}
+  .table-wrap{overflow-x:auto}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<nav id="nav">
+  <div class="brand">J.A.R.V.I.S<small>LifeOS · local</small></div>
+  <button data-view="dashboard" class="active">Painel</button>
+  <button data-view="chat">Conversa</button>
+  <button data-view="tasks">Tarefas</button>
+  <button data-view="goals">Metas e projetos</button>
+  <button data-view="habits">Hábitos</button>
+  <button data-view="memory">Memória</button>
+  <button data-view="reviews">Revisões</button>
+  <button data-view="autonomy">Autonomia</button>
+  <button data-view="audit">Auditoria</button>
+  <button data-view="settings">Conexão</button>
+</nav>
+<main>
+
+<section id="v-dashboard">
+  <h1>Painel</h1>
+  <div class="kpis" id="kpis"></div>
+  <div class="grid">
+    <div class="card"><h2>Alertas</h2><ul class="list" id="dash-alerts"></ul></div>
+    <div class="card"><h2>Plano do dia</h2><ul class="list" id="dash-plan"></ul></div>
+    <div class="card"><h2>Aguardando aprovação</h2><ul class="list" id="dash-pending"></ul></div>
+  </div>
+</section>
+
+<section id="v-chat" class="hidden">
+  <div class="chat">
+    <div class="card sessions"><h2>Conversas</h2>
+      <button class="ghost" id="new-session" style="margin-bottom:8px">+ nova</button>
+      <ul class="list" id="session-list"></ul></div>
+    <div class="thread">
+      <div class="msgs" id="msgs"><div class="msg sys">Converse com o JARVIS. Ações de risco aguardam sua aprovação.</div></div>
+      <div class="composer">
+        <textarea id="chat-input" placeholder="Mensagem… (Enter envia, Shift+Enter quebra linha)"></textarea>
+        <button class="btn" id="chat-send">Enviar</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="v-tasks" class="hidden">
+  <h1>Tarefas</h1>
+  <div class="card">
+    <div class="row">
+      <input id="t-title" placeholder="Nova tarefa">
+      <select id="t-priority"><option value="1">P1</option><option value="2">P2</option><option value="3" selected>P3</option><option value="4">P4</option></select>
+      <input id="t-due" type="date" title="Prazo">
+      <select id="t-project"><option value="">sem projeto</option></select>
+      <button class="btn" id="t-add">Adicionar</button>
+    </div>
+    <ul class="list" id="task-list"></ul>
+  </div>
+</section>
+
+<section id="v-goals" class="hidden">
+  <h1>Metas e projetos</h1>
+  <div class="grid">
+    <div class="card"><h2>Metas</h2>
+      <div class="row"><input id="g-title" placeholder="Nova meta">
+        <select id="g-horizon"><option value="short">curto</option><option value="medium" selected>médio</option><option value="long">longo</option></select>
+        <button class="btn" id="g-add">Adicionar</button></div>
+      <ul class="list" id="goal-list"></ul></div>
+    <div class="card"><h2>Projetos</h2>
+      <div class="row"><input id="p-title" placeholder="Novo projeto">
+        <select id="p-goal"><option value="">sem meta</option></select>
+        <button class="btn" id="p-add">Adicionar</button></div>
+      <ul class="list" id="project-list"></ul></div>
+  </div>
+</section>
+
+<section id="v-habits" class="hidden">
+  <h1>Hábitos</h1>
+  <div class="card">
+    <div class="row"><input id="h-title" placeholder="Novo hábito">
+      <select id="h-cadence"><option value="daily">diário</option><option value="weekly">semanal</option></select>
+      <button class="btn" id="h-add">Adicionar</button></div>
+    <ul class="list" id="habit-list"></ul>
+  </div>
+</section>
+
+<section id="v-memory" class="hidden">
+  <h1>Memória</h1>
+  <div class="grid">
+    <div class="card"><h2>Buscar</h2>
+      <div class="row"><input id="m-q" placeholder="Buscar na memória">
+        <select id="m-layer"><option value="">todas as camadas</option><option>identity</option><option>personal</option><option>episodic</option><option>operational</option><option>knowledge</option></select>
+        <button class="btn" id="m-search">Buscar</button></div>
+      <ul class="list" id="memory-list"></ul></div>
+    <div class="card"><h2>Registrar</h2>
+      <div class="row"><textarea id="m-content" rows="3" placeholder="Fato durável, preferência, regra…"></textarea></div>
+      <div class="row">
+        <select id="m-add-layer"><option>personal</option><option>identity</option><option>episodic</option><option>operational</option><option>knowledge</option></select>
+        <select id="m-status"><option value="confirmed">confirmado</option><option value="hypothesis">hipótese</option></select>
+        <input id="m-subject" placeholder="assunto (opcional)">
+        <button class="btn" id="m-add">Registrar</button></div>
+      <p class="meta">Camada <b>identity</b> define regras de comportamento do JARVIS. Mesmo assunto com conteúdo diferente gera conflito, não sobrescrita silenciosa.</p></div>
+  </div>
+</section>
+
+<section id="v-reviews" class="hidden">
+  <h1>Revisões</h1>
+  <div class="row">
+    <select id="r-kind"><option value="morning">Relatório matinal</option><option value="evening">Revisão noturna</option><option value="weekly">Revisão semanal</option><option value="monthly">Revisão mensal</option></select>
+    <input id="r-notes" placeholder="Obstáculos / observações (opcional)">
+    <button class="btn" id="r-build">Gerar</button>
+    <button class="ghost" id="r-save">Arquivar</button>
+  </div>
+  <pre class="report" id="report">Selecione e gere uma revisão.</pre>
+  <h2 style="margin-top:18px">Arquivadas</h2>
+  <ul class="list" id="review-history"></ul>
+</section>
+
+<section id="v-autonomy" class="hidden">
+  <h1>Autonomia</h1>
+  <div class="card" style="margin-bottom:14px">
+    <div class="row" style="align-items:center">
+      <label for="a-level">Nível</label>
+      <select id="a-level"><option value="1">1 · consultivo</option><option value="2">2 · assistido</option><option value="3">3 · autorizado</option><option value="4">4 · proativo</option></select>
+      <button class="btn" id="a-save">Aplicar</button>
+    </div>
+    <p class="meta" id="a-summary"></p>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>Pré-autorizações (níveis 3–4)</h2><div class="table-wrap"><table id="a-cats"></table></div></div>
+    <div class="card"><h2>Pendências</h2><ul class="list" id="approval-list"></ul></div>
+  </div>
+</section>
+
+<section id="v-audit" class="hidden">
+  <h1>Auditoria</h1>
+  <p id="audit-state" class="meta"></p>
+  <div class="card table-wrap"><table id="audit-table"></table></div>
+</section>
+
+<section id="v-settings" class="hidden">
+  <h1>Conexão</h1>
+  <div class="card">
+    <p class="meta">Se o servidor exigir chave de API (<span class="mono">server.api_key</span>), informe-a. Fica apenas neste navegador.</p>
+    <div class="row"><input id="s-key" type="password" placeholder="Chave de API (opcional)"><button class="btn" id="s-save">Salvar</button></div>
+  </div>
+</section>
+
+</main>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch {} },
+};
+let sessionId = store.get("lifeos.session") || null;
+
+function toast(msg, err=false){
+  const t = $("toast"); t.textContent = msg; t.className = "toast" + (err ? " err" : "");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add("hidden"), 4000);
+}
+
+async function api(path, opts={}){
+  const headers = {"Content-Type":"application/json"};
+  const key = store.get("lifeos.apikey");
+  if (key) headers["Authorization"] = "Bearer " + key;
+  const res = await fetch("/v1/lifeos" + path, {...opts, headers, body: opts.body ? JSON.stringify(opts.body) : undefined});
+  if (!res.ok){
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    if (res.status === 401) detail = "Não autorizado: configure a chave em Conexão.";
+    throw new Error(detail);
+  }
+  return res.json();
+}
+const run = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message, true); } };
+
+const taskLine = (t) => `${esc(t.title)} <span class="tag">P${t.priority}</span>${t.due_date ? ` <span class="meta">prazo ${esc(t.due_date)}</span>` : ""}`;
+const SEV = {high:"alta", medium:"média", low:"baixa", none:"nenhum", critical:"crítico"};
+const sev = (v) => SEV[v] || v;
+const empty = (msg) => `<li class="meta">${esc(msg)}</li>`;
+
+/* navigation */
+const loaders = {};
+function show(view){
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  document.querySelectorAll("main > section").forEach(s => s.classList.toggle("hidden", s.id !== "v-" + view));
+  store.set("lifeos.view", view);
+  (loaders[view] || (()=>{}))();
+}
+$("nav").addEventListener("click", (e) => { if (e.target.dataset.view) show(e.target.dataset.view); });
+
+/* dashboard */
+loaders.dashboard = run(async () => {
+  const [st, alerts, morning, pending] = await Promise.all([api("/status"), api("/alerts"), api("/reviews/morning"), api("/approvals")]);
+  const p = st.planner;
+  $("kpis").innerHTML = [
+    ["Tarefas abertas", p.tasks_open, false], ["Atrasadas", p.tasks_overdue, p.tasks_overdue > 0],
+    ["Projetos ativos", p.projects_active, false], ["Metas ativas", p.goals_active, false],
+    ["Hábitos", p.habits_active, false], ["Memórias", st.memory.total, false],
+    ["Autonomia", "N" + st.autonomy_level, false], ["Pendências", st.pending_actions, st.pending_actions > 0],
+  ].map(([l,v,a]) => `<div class="kpi${a ? " alert" : ""}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
+  $("dash-alerts").innerHTML = alerts.length ? alerts.map(a => `<li><span class="tag ${esc(a.severity)}">${esc(sev(a.severity))}</span><span class="grow">${esc(a.message)}</span></li>`).join("") : empty("Nenhum alerta.");
+  const plan = morning.sections.plan || [];
+  $("dash-plan").innerHTML = plan.length ? plan.map(t => `<li><span class="grow">${taskLine(t)}</span><button class="ghost" data-done="${t.id}">concluir</button></li>`).join("") : empty("Nenhuma tarefa aberta.");
+  renderPending($("dash-pending"), pending);
+});
+document.body.addEventListener("click", run(async (e) => {
+  const d = e.target.dataset;
+  if (d.done){ await api(`/tasks/${d.done}/done`, {method:"POST"}); toast("Tarefa concluída."); refresh(); }
+  if (d.approve){ const r = await api(`/approvals/${d.approve}/approve`, {method:"POST"}); toast(r.executed ? "Executada." : "Aprovada (uso único)."); refresh(); }
+  if (d.deny){ await api(`/approvals/${d.deny}/deny`, {method:"POST"}); toast("Negada."); refresh(); }
+}));
+function renderPending(el, items){
+  el.innerHTML = items.length ? items.map(i => `<li><span class="grow"><b class="mono">${esc(i.tool)}</b> <span class="tag ${esc(i.risk)}">${esc(i.category)}</span><br><span class="meta mono">${esc(JSON.stringify(i.arguments)).slice(0,300)}</span></span>
+    <button class="ghost" data-approve="${esc(i.id)}">aprovar</button><button class="ghost danger" data-deny="${esc(i.id)}">negar</button></li>`).join("") : empty("Nada pendente.");
+}
+function refresh(){ show(store.get("lifeos.view") || "dashboard"); }
+
+/* chat */
+function addMsg(role, text){ const d = document.createElement("div"); d.className = "msg " + role; d.textContent = text; $("msgs").appendChild(d); $("msgs").scrollTop = 1e9; }
+async function refreshSessions(){
+  const sessions = await api("/sessions");
+  $("session-list").innerHTML = sessions.length ? sessions.map(s => `<li data-session="${esc(s.session_id)}" class="${s.session_id === sessionId ? "active" : ""}"><span class="grow" data-session="${esc(s.session_id)}">${esc((s.first_message || "(vazia)").slice(0,60))}<br><span class="meta" data-session="${esc(s.session_id)}">${esc((s.last_at||"").slice(0,16).replace("T"," "))} · ${s.messages} msgs</span></span></li>`).join("") : empty("Nenhuma conversa.");
+}
+loaders.chat = run(async () => {
+  await refreshSessions();
+  if (sessionId) await loadSession(sessionId);
+});
+async function loadSession(id){
+  const msgs = await api(`/sessions/${encodeURIComponent(id)}`);
+  $("msgs").innerHTML = "";
+  msgs.forEach(m => addMsg(m.role, m.content));
+}
+$("session-list").addEventListener("click", run(async (e) => {
+  const id = e.target.dataset.session; if (!id) return;
+  sessionId = id; store.set("lifeos.session", id); loaders.chat();
+}));
+$("new-session").onclick = () => { sessionId = null; store.set("lifeos.session", ""); $("msgs").innerHTML = '<div class="msg sys">Nova conversa.</div>'; };
+const send = run(async () => {
+  const text = $("chat-input").value.trim(); if (!text) return;
+  $("chat-input").value = ""; addMsg("user", text);
+  $("chat-send").disabled = true; addMsg("sys", "JARVIS processando…");
+  try {
+    const r = await api("/chat", {method:"POST", body:{message:text, session_id: sessionId}});
+    $("msgs").lastChild.remove();
+    sessionId = r.session_id; store.set("lifeos.session", sessionId);
+    addMsg("assistant", r.reply || "(sem resposta)");
+    if (r.pending.length) addMsg("sys", `${r.pending.length} ação(ões) aguardando aprovação — veja Autonomia.`);
+    await refreshSessions();
+  } catch (e) { $("msgs").lastChild.remove(); throw e; }
+  finally { $("chat-send").disabled = false; }
+});
+$("chat-send").onclick = send;
+$("chat-input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); } });
+
+/* tasks */
+loaders.tasks = run(async () => {
+  const [tasks, projects] = await Promise.all([api("/items/task?status=todo,doing"), api("/items/project?status=active")]);
+  $("t-project").innerHTML = '<option value="">sem projeto</option>' + projects.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join("");
+  $("task-list").innerHTML = tasks.length ? tasks.map(t => `<li><span class="grow">${taskLine(t)} ${t.status === "doing" ? '<span class="tag low">em andamento</span>' : ""}</span>
+    <button class="ghost" data-done="${t.id}">concluir</button><button class="ghost danger" data-del="task:${t.id}">excluir</button></li>`).join("") : empty("Nenhuma tarefa aberta.");
+});
+$("t-add").onclick = run(async () => {
+  const body = {title: $("t-title").value, priority: Number($("t-priority").value)};
+  if ($("t-due").value) body.due_date = $("t-due").value;
+  if ($("t-project").value) body.project_id = Number($("t-project").value);
+  await api("/items/task", {method:"POST", body}); $("t-title").value = ""; loaders.tasks();
+});
+document.body.addEventListener("click", run(async (e) => {
+  const del = e.target.dataset.del; if (!del) return;
+  const [kind, id] = del.split(":");
+  if (!confirm("Excluir definitivamente?")) return;
+  await api(`/items/${kind}/${id}`, {method:"DELETE"}); toast("Excluído."); refresh();
+}));
+
+/* goals & projects */
+loaders.goals = run(async () => {
+  const [goals, projects] = await Promise.all([api("/items/goal"), api("/items/project")]);
+  const hz = {short:"curto",medium:"médio",long:"longo"};
+  $("p-goal").innerHTML = '<option value="">sem meta</option>' + goals.filter(g => g.status === "active").map(g => `<option value="${g.id}">${esc(g.title)}</option>`).join("");
+  $("goal-list").innerHTML = goals.length ? goals.map(g => `<li><span class="grow">${esc(g.title)} <span class="tag">${hz[g.horizon]}</span> <span class="meta">${esc(g.status)}</span></span><button class="ghost danger" data-del="goal:${g.id}">excluir</button></li>`).join("") : empty("Nenhuma meta.");
+  $("project-list").innerHTML = projects.length ? projects.map(p => `<li><span class="grow">${esc(p.title)} <span class="meta">${esc(p.status)}${p.next_action ? " · próxima: " + esc(p.next_action) : ""}</span></span><button class="ghost danger" data-del="project:${p.id}">excluir</button></li>`).join("") : empty("Nenhum projeto.");
+});
+$("g-add").onclick = run(async () => { await api("/items/goal", {method:"POST", body:{title:$("g-title").value, horizon:$("g-horizon").value}}); $("g-title").value=""; loaders.goals(); });
+$("p-add").onclick = run(async () => {
+  const body = {title:$("p-title").value}; if ($("p-goal").value) body.goal_id = Number($("p-goal").value);
+  await api("/items/project", {method:"POST", body}); $("p-title").value=""; loaders.goals();
+});
+
+/* habits */
+loaders.habits = run(async () => {
+  const habits = await api("/items/habit?status=active");
+  $("habit-list").innerHTML = habits.length ? habits.map(h => `<li><span class="grow">${esc(h.title)} <span class="tag">${h.cadence === "daily" ? "diário" : "semanal"}</span></span><button class="ghost" data-hlog="${h.id}">registrar hoje</button><button class="ghost danger" data-del="habit:${h.id}">excluir</button></li>`).join("") : empty("Nenhum hábito.");
+});
+$("h-add").onclick = run(async () => { await api("/items/habit", {method:"POST", body:{title:$("h-title").value, cadence:$("h-cadence").value}}); $("h-title").value=""; loaders.habits(); });
+$("habit-list").addEventListener("click", run(async (e) => { const id = e.target.dataset.hlog; if (!id) return; await api(`/habits/${id}/log`, {method:"POST"}); toast("Registrado."); }));
+
+/* memory */
+loaders.memory = run(async () => {
+  const q = encodeURIComponent($("m-q").value), layer = encodeURIComponent($("m-layer").value);
+  const items = await api(`/memory?q=${q}&layer=${layer}`);
+  $("memory-list").innerHTML = items.length ? items.map(m => `<li><span class="grow">${esc(m.content)}<br><span class="meta">#${m.id} · ${esc(m.layer)} · ${m.status === "confirmed" ? "confirmado" : "hipótese"}${m.subject ? " · " + esc(m.subject) : ""} · ${esc(m.updated_at.slice(0,10))}</span></span>
+    <button class="ghost" data-medit="${m.id}">corrigir</button><button class="ghost danger" data-mdel="${m.id}">apagar</button></li>`).join("") : empty("Nada encontrado.");
+});
+$("m-search").onclick = loaders.memory;
+$("m-q").addEventListener("keydown", (e) => { if (e.key === "Enter") loaders.memory(); });
+$("m-add").onclick = run(async () => {
+  const r = await api("/memory", {method:"POST", body:{content:$("m-content").value, layer:$("m-add-layer").value, status:$("m-status").value, subject:$("m-subject").value}});
+  toast(r.created ? "Registrado." : "Já existia (deduplicado)."); $("m-content").value = ""; loaders.memory();
+});
+$("memory-list").addEventListener("click", run(async (e) => {
+  const d = e.target.dataset;
+  if (d.mdel && confirm("Apagar esta memória e seu histórico?")){ await api(`/memory/${d.mdel}`, {method:"DELETE"}); loaders.memory(); }
+  if (d.medit){ const c = prompt("Novo conteúdo:"); if (c){ await api(`/memory/${d.medit}`, {method:"PATCH", body:{content:c}}); loaders.memory(); } }
+}));
+
+/* reviews */
+loaders.reviews = run(async () => {
+  const hist = await api("/reviews");
+  $("review-history").innerHTML = hist.length ? hist.map(r => `<li data-rev="${r.id}"><span class="grow mono" data-rev="${r.id}">${esc(r.kind)} · ${esc(r.period_key)}</span><span class="meta">${esc(r.created_at.slice(0,16).replace("T"," "))}</span></li>`).join("") : empty("Nenhuma revisão arquivada.");
+  $("review-history")._data = hist;
+});
+$("r-build").onclick = run(async () => { const r = await api(`/reviews/${$("r-kind").value}?notes=${encodeURIComponent($("r-notes").value)}`); $("report").textContent = r.text; });
+$("r-save").onclick = run(async () => { const r = await api(`/reviews/${$("r-kind").value}`, {method:"POST", body:{notes:$("r-notes").value}}); $("report").textContent = r.text; toast("Arquivada."); loaders.reviews(); });
+$("review-history").addEventListener("click", (e) => { const id = Number(e.target.dataset.rev); const r = ($("review-history")._data||[]).find(x => x.id === id); if (r) $("report").textContent = r.content; });
+
+/* autonomy */
+loaders.autonomy = run(async () => {
+  const [a, pending] = await Promise.all([api("/autonomy"), api("/approvals")]);
+  $("a-level").value = String(a.level); $("a-summary").textContent = a.summary;
+  $("a-cats").innerHTML = "<tr><th></th><th>Categoria</th><th>Risco</th><th>Descrição</th></tr>" + a.categories.map(c => {
+    const on = a.grants.includes(c.name);
+    const ctl = c.grantable ? `<input type="checkbox" data-grant="${esc(c.name)}" ${on ? "checked" : ""}>` : (c.risk === "none" ? "—" : '<span class="meta">sempre pede</span>');
+    return `<tr><td>${ctl}</td><td class="mono">${esc(c.name)}</td><td><span class="tag ${esc(c.risk)}">${esc(sev(c.risk))}</span></td><td>${esc(c.description)}</td></tr>`;
+  }).join("");
+  renderPending($("approval-list"), pending);
+});
+$("a-save").onclick = run(async () => { await api("/autonomy", {method:"PUT", body:{level:Number($("a-level").value)}}); toast("Nível aplicado."); loaders.autonomy(); });
+$("a-cats").addEventListener("change", run(async (e) => {
+  const c = e.target.dataset.grant; if (!c) return;
+  await api(`/grants/${c}`, {method: e.target.checked ? "POST" : "DELETE"}); loaders.autonomy();
+}));
+
+/* audit */
+loaders.audit = run(async () => {
+  const a = await api("/audit?limit=100");
+  $("audit-state").innerHTML = a.intact ? '<span style="color:var(--accent)">Cadeia de hashes íntegra.</span>' : `<span style="color:var(--danger)">Adulteração detectada no registro #${a.first_bad_id}.</span>`;
+  $("audit-table").innerHTML = "<tr><th>#</th><th>Quando</th><th>Ator</th><th>Ação</th><th>Categoria</th><th>Decisão</th><th>Resultado</th></tr>" + a.entries.map(e =>
+    `<tr><td class="mono">${e.id}</td><td class="mono">${esc(e.ts.slice(0,19).replace("T"," "))}</td><td>${esc(e.actor)}</td><td class="mono">${esc(e.action)}</td><td>${esc(e.category)}</td><td>${esc(e.decision)}${e.success === 0 ? ' <span class="tag high">falha</span>' : ""}</td><td class="meta">${esc((e.result||"").slice(0,140))}</td></tr>`).join("");
+});
+
+/* settings */
+$("s-save").onclick = () => { store.set("lifeos.apikey", $("s-key").value); toast("Chave salva."); refresh(); };
+
+refresh();
+</script>
+</body>
+</html>

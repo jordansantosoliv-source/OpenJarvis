@@ -58,4 +58,10 @@ for _name in _BUILTIN_TOOL_MODULES:
     except ImportError as _exc:
         logger.debug("Optional tool %s not loaded: %s", _name, _exc)
 
+# JARVIS LifeOS tools (lifeos_memory, lifeos_planner, lifeos_review).
+try:
+    importlib.import_module("openjarvis.lifeos.tools")
+except ImportError as _exc:
+    logger.debug("LifeOS tools not loaded: %s", _exc)
+
 __all__ = ["BaseTool", "ToolExecutor", "ToolSpec"]

@@ -185,6 +185,17 @@ if not _DATA_BOUNDARY_BOOTSTRAP:
         _logging.getLogger(__name__).debug(
             "deep-research command unavailable: %s", _dr_exc
         )
+    # JARVIS LifeOS command group.
+    try:
+        from openjarvis.lifeos.cli import lifeos as _lifeos_group
+
+        cli.add_command(_lifeos_group, "lifeos")
+    except Exception as _lifeos_exc:
+        import logging as _logging
+
+        _logging.getLogger(__name__).debug(
+            "lifeos command unavailable: %s", _lifeos_exc
+        )
     cli.add_command(self_update, "self-update")
     cli.add_command(bootstrap_cmd, "_bootstrap")
 

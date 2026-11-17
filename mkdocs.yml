@@ -169,6 +169,7 @@ nav:
       - Overview: architecture/overview.md
       - Intelligence: architecture/intelligence.md
       - Engine: architecture/engine.md
+      - JARVIS LifeOS: architecture/lifeos.md
       - Agents: architecture/agents.md
       - Tools & Memory: architecture/memory.md
       - Learning: architecture/learning.md
@@ -178,6 +179,7 @@ nav:
   - API Reference: api-reference/
   - User Guide:
       - CLI: user-guide/cli.md
+      - JARVIS LifeOS: user-guide/lifeos.md
       - Pearl CLI: user-guide/pearl.md
       - Pearl Mining: user-guide/mining.md
       - Pearl Mining on Apple Silicon: user-guide/mining-apple-silicon.md

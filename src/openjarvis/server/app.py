@@ -484,6 +484,15 @@ def create_app(
     app.include_router(analytics_router)
     include_all_routes(app)
 
+    # JARVIS LifeOS API (/v1/lifeos/*) and dashboard (/lifeos). Registered
+    # before the SPA catch-all below so its paths are not shadowed.
+    try:
+        from openjarvis.lifeos.api import create_lifeos_router
+
+        app.include_router(create_lifeos_router())
+    except Exception as exc:
+        logger.debug("LifeOS routes init skipped: %s", exc)
+
     # Restore SendBlue channel bindings from database on startup
     _restore_sendblue_bindings(app)
 
