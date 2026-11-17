@@ -6,9 +6,41 @@ personalidade, memória persistente em camadas, organização da vida (metas,
 projetos, tarefas, hábitos, compromissos, decisões), revisões periódicas,
 autonomia por nível de risco e auditoria de cada ação.
 
-Tudo roda localmente. Os dados ficam em um único arquivo SQLite sob
-`~/.openjarvis/lifeos/` (ou `%USERPROFILE%\.openjarvis\lifeos\` no Windows;
-respeita `OPENJARVIS_HOME`).
+Tudo roda localmente, numa pasta exclusiva (`%USERPROFILE%\JARVIS-LifeOS`
+no Windows; altere com a variável `JARVIS_LIFEOS_HOME`):
+
+```
+JARVIS-LifeOS/
+├── config/      lifeos.toml, persona.md
+├── memory/      lifeos.db (SQLite)
+├── workspace/   arquivos que o JARVIS pode organizar
+├── research/    pesquisas
+├── reports/     revisões arquivadas (Markdown)
+├── logs/        cópia do registro de ações (JSONL)
+├── backups/     backups com data e hora
+└── interface/   reservado para a interface
+```
+
+O `config.toml` do OpenJarvis nunca é escrito pelo LifeOS; ele só é lido
+(e copiado) pelo comando `jarvis lifeos backup`.
+
+### Permissões por pasta
+
+A ferramenta de arquivos do JARVIS (`lifeos_files`) só enxerga
+`JARVIS-LifeOS`. Caminhos absolutos, `..` e links simbólicos que saem da
+pasta são recusados. Cada pasta tem uma permissão em `[folders]` no
+`lifeos.toml`:
+
+| Pasta | Padrão |
+|-------|--------|
+| config, logs, interface | `read` |
+| workspace, research, reports | `write` |
+| memory, backups | `none` |
+
+Criar, anexar e mover dentro de pastas `write` é organização (sem
+confirmação no nível 3). Sobrescrever ou excluir sempre pede confirmação.
+As ferramentas nativas `file_write` e `apply_patch`, que não ficam
+confinadas à pasta, são classificadas como risco alto.
 
 ## Estado atual
 
@@ -60,15 +92,31 @@ jarvis lifeos chat --session <id>  # retoma conversa
 jarvis ask -a jarvis_orchestrator "..."   # via comando nativo (ações de risco ficam pendentes)
 ```
 
-### Painel web
+### Central de comando (interface)
 
 ```bash
 jarvis serve        # depois abra http://127.0.0.1:8000/lifeos
 ```
 
-Painel, conversa com histórico, tarefas, metas e projetos, hábitos, memória,
-revisões, autonomia/pendências e auditoria. Se `server.api_key` estiver
-definido, informe a chave na aba **Conexão**.
+Interface holográfica (azul-marinho, ciano e azul elétrico), em HTML/CSS/JS
+sem dependências externas, servida pelo próprio servidor:
+
+- **centro:** núcleo do JARVIS com estados reais: ONLINE, PROCESSANDO
+  (durante a chamada ao modelo), ESCUTANDO (gravando o microfone),
+  RESPONDENDO (reproduzindo voz), FALHA/OFFLINE;
+- **esquerda:** módulos (tarefas, metas/projetos, hábitos, revisões,
+  memória, arquivos, autonomia, auditoria), plano do dia, aprovações
+  pendentes, projetos e ferramentas;
+- **direita:** CPU e RAM reais (`psutil`), estado do modelo e modelos
+  carregados no Ollama (`/api/ps`), memória, alertas, atividades e logs;
+- **inferior:** histórico de conversas, texto, voz.
+
+Voz usa os endpoints existentes do OpenJarvis: `/v1/speech/transcribe`
+(entrada) e `/v1/speech/synthesize` (saída). Os botões ficam desativados
+quando o servidor não tem backend de voz configurado. O reconhecimento de
+voz do navegador não é usado porque envia áudio para a nuvem.
+
+Se `server.api_key` estiver definido, informe a chave no botão ⚙.
 
 ### Organização
 
@@ -165,14 +213,21 @@ jarvis lifeos approvals deny <id>
 | Nível | Comportamento |
 |-------|---------------|
 | 1 consultivo | só leitura; o JARVIS recomenda, não executa |
-| 2 assistido (padrão) | toda ação com efeito pede autorização |
-| 3 autorizado | categorias pré-autorizadas executam sozinhas |
+| 2 assistido | toda ação com efeito pede autorização |
+| 3 autorizado (padrão) | categorias pré-autorizadas executam sozinhas |
 | 4 proativo | como 3; o JARVIS monitora objetivos e propõe iniciativas |
+
+Pré-autorizado por padrão: `report` (relatórios), `file_organize`
+(organização dentro das pastas permitidas) e `external_request` (pesquisas
+somente leitura, como busca na web). Consultas e análises são leitura e
+nunca pedem confirmação.
 
 Regras fixas, independentes do nível:
 
-- risco **alto** (enviar mensagens, excluir dados, alterar configuração,
-  executar código) sempre pede confirmação e não pode ser pré-autorizado;
+- risco **alto** (enviar mensagens, excluir dados, modificar documentos
+  existentes, operações externas sensíveis como `http_request`, alterar
+  configuração, executar código) sempre pede confirmação e não pode ser
+  pré-autorizado;
 - risco **crítico** (compras, pagamentos, movimentações financeiras) sempre
   exige confirmação explícita e não pode ser pré-autorizado;
 - ferramentas sem classificação são tratadas como risco alto.
@@ -184,6 +239,24 @@ idêntica.
 
 O callback genérico de confirmação do OpenJarvis (`jarvis ask` aprova tudo
 automaticamente) **não** é usado pela política do LifeOS.
+
+### Backups
+
+```bash
+jarvis lifeos backup --label antes-da-mudanca
+```
+
+Copia, para `backups/AAAAMMDD-HHMMSS-rotulo/`: o banco (cópia consistente
+pela API de backup do SQLite), `lifeos.toml`, `persona.md` e o
+`config.toml` do OpenJarvis (como `openjarvis-config.toml`). Os originais
+só são lidos. `jarvis lifeos wipe` faz um backup automático antes de apagar.
+
+### Arquivos
+
+```bash
+jarvis lifeos files              # pastas e permissões
+jarvis lifeos files workspace    # conteúdo
+```
 
 ### Auditoria e dados
 
@@ -212,7 +285,7 @@ jarvis lifeos persona reset   # restaura o padrão (cria .bak)
 ```toml
 language = "pt-BR"
 user_name = ""
-autonomy_level = 2           # valor inicial; `autonomy set` grava no banco e prevalece
+autonomy_level = 3           # valor inicial; `autonomy set` grava no banco e prevalece
 memory_context_limit = 8
 
 [semantic]
