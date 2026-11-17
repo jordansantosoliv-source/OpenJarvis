@@ -39,12 +39,18 @@ class FakeEmbedder:
         return out
 
 
+@pytest.fixture(autouse=True)
+def _isolated_lifeos_home(tmp_path, monkeypatch):
+    """Never touch the real ~/JARVIS-LifeOS during tests."""
+    monkeypatch.setenv("JARVIS_LIFEOS_HOME", str(tmp_path / "JARVIS-LifeOS"))
+    reset_default_lifeos()
+    yield
+    reset_default_lifeos()
+
+
 @pytest.fixture
 def lifeos(tmp_path):
-    cfg = LifeOSConfig(
-        db_path=str(tmp_path / "lifeos.db"),
-        persona_path=str(tmp_path / "persona.md"),
-    )
+    cfg = LifeOSConfig(root=str(tmp_path / "JARVIS-LifeOS"))
     lo = LifeOS(cfg)
     yield lo
     lo.close()
@@ -53,10 +59,7 @@ def lifeos(tmp_path):
 
 @pytest.fixture
 def semantic_lifeos(tmp_path):
-    cfg = LifeOSConfig(
-        db_path=str(tmp_path / "lifeos_sem.db"),
-        persona_path=str(tmp_path / "persona.md"),
-    )
+    cfg = LifeOSConfig(root=str(tmp_path / "JARVIS-LifeOS-sem"))
     lo = LifeOS(cfg, embedder=FakeEmbedder())
     yield lo
     lo.close()

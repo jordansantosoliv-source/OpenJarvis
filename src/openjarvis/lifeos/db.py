@@ -279,6 +279,17 @@ class LifeOSDB:
                 (key, str(value)),
             )
 
+    def backup_to(self, target: Path | str) -> Path:
+        """Consistent online copy of the database (SQLite backup API)."""
+        target = Path(target)
+        with self._lock:
+            dest = sqlite3.connect(str(target))
+            try:
+                self._conn.backup(dest)
+            finally:
+                dest.close()
+        return target
+
     def close(self) -> None:
         with self._lock:
             try:

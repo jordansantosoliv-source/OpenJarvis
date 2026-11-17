@@ -52,6 +52,7 @@ class _LifeOSTool(BaseTool):
         except (
             LifeOSMemoryError,
             PlannerError,
+            OSError,  # includes WorkspaceError (PermissionError)
             ValueError,
             KeyError,
             TypeError,
@@ -333,15 +334,93 @@ class LifeOSReviewTool(_LifeOSTool):
         notes = str(p.get("notes") or "")
         report = self.lifeos.reviews.build(kind, notes=notes)
         if p.get("save"):
-            review_id = self.lifeos.reviews.save(report, notes=notes)
+            review_id = self.lifeos.save_review(report, notes=notes)
             return self._ok(f"{report.text}\n\n(Revisão arquivada: #{review_id})")
         return self._ok(report.text)
+
+
+@ToolRegistry.register("lifeos_files")
+class LifeOSFilesTool(_LifeOSTool):
+    tool_id = "lifeos_files"
+
+    @property
+    def spec(self) -> ToolSpec:
+        return ToolSpec(
+            name="lifeos_files",
+            description=(
+                "Arquivos de texto SOMENTE dentro da pasta JARVIS-LifeOS. Caminhos "
+                "relativos começando pela pasta: workspace/, research/, reports/, "
+                "config/, logs/, interface/. Ações: list (sem path lista as pastas e "
+                "permissões), read, write (cria arquivo novo; append=true anexa; "
+                "overwrite=true sobrescreve e exige confirmação), mkdir, move, delete "
+                "(exige confirmação). Fora de JARVIS-LifeOS não há acesso."
+            ),
+            parameters={
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["list", "read", "write", "mkdir", "move", "delete"],
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Ex.: workspace/notas.md",
+                    },
+                    "content": {"type": "string"},
+                    "append": {"type": "boolean"},
+                    "overwrite": {"type": "boolean"},
+                    "destination": {"type": "string", "description": "Destino (move)."},
+                },
+                "required": ["action"],
+            },
+            category="filesystem",
+            required_capabilities=["file:read", "file:write"],
+            timeout_seconds=15.0,
+        )
+
+    def lifeos_category(self, arguments: Dict[str, Any]) -> str:
+        args = dict(arguments)
+        if args.get("overwrite") and str(args.get("action")) in ("write", "move"):
+            return "file_modify"
+        return self.lifeos.workspace.category_for(str(args.get("action", "")), args)
+
+    def _run(self, **p: Any) -> ToolResult:
+        ws = self.lifeos.workspace
+        action = str(p.get("action", "")).lower()
+        path = str(p.get("path") or "")
+        if action == "list":
+            return self._ok(ws.list(path))
+        if action == "read":
+            return self._ok(ws.read(path))
+        if action == "write":
+            return self._ok(
+                ws.write(
+                    path,
+                    str(p.get("content", "")),
+                    append=bool(p.get("append")),
+                    overwrite=bool(p.get("overwrite")),
+                )
+            )
+        if action == "mkdir":
+            return self._ok(ws.mkdir(path))
+        if action == "move":
+            return self._ok(
+                ws.move(
+                    path,
+                    str(p.get("destination") or ""),
+                    overwrite=bool(p.get("overwrite")),
+                )
+            )
+        if action == "delete":
+            return self._ok(ws.delete(path))
+        return self._fail(f"Ação desconhecida '{action}'")
 
 
 LIFEOS_TOOL_CLASSES: Dict[str, type] = {
     "lifeos_memory": LifeOSMemoryTool,
     "lifeos_planner": LifeOSPlannerTool,
     "lifeos_review": LifeOSReviewTool,
+    "lifeos_files": LifeOSFilesTool,
 }
 
 
@@ -358,6 +437,7 @@ def build_lifeos_tools(lifeos: Optional[Any] = None) -> list[BaseTool]:
 
 __all__ = [
     "LIFEOS_TOOL_CLASSES",
+    "LifeOSFilesTool",
     "LifeOSMemoryTool",
     "LifeOSPlannerTool",
     "LifeOSReviewTool",

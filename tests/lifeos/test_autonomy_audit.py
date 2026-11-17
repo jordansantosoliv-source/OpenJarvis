@@ -58,9 +58,10 @@ def test_classification():
 
 
 def test_default_level_and_persisted_change(lifeos):
-    assert lifeos.autonomy_level is AutonomyLevel.ASSISTED
-    lifeos.set_autonomy_level(3)
     assert lifeos.autonomy_level is AutonomyLevel.AUTHORIZED
+    assert set(lifeos.grants()) == {"report", "file_organize", "external_request"}
+    lifeos.set_autonomy_level(2)
+    assert lifeos.autonomy_level is AutonomyLevel.ASSISTED
     with pytest.raises(ValueError):
         lifeos.set_autonomy_level(7)
 

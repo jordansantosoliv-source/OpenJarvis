@@ -80,11 +80,25 @@ CATEGORIES: Dict[str, Category] = {
         Category(
             "external_request", Risk.MEDIUM, "Consultar serviços externos (web, APIs)"
         ),
-        Category("file_organize", Risk.MEDIUM, "Criar ou mover arquivos"),
+        Category(
+            "file_organize",
+            Risk.MEDIUM,
+            "Criar, anexar ou mover arquivos dentro das pastas permitidas de JARVIS-LifeOS",
+        ),
         Category("schedule", Risk.MEDIUM, "Criar ou alterar agendamentos"),
         Category("memory_delete", Risk.HIGH, "Apagar memória"),
         Category("planning_delete", Risk.HIGH, "Apagar metas, projetos, tarefas"),
         Category("file_delete", Risk.HIGH, "Excluir arquivos"),
+        Category(
+            "file_modify",
+            Risk.HIGH,
+            "Modificar ou sobrescrever documentos existentes, ou escrever fora de JARVIS-LifeOS",
+        ),
+        Category(
+            "external_action",
+            Risk.HIGH,
+            "Operações externas sensíveis (enviar dados, preencher formulários, APIs com efeito)",
+        ),
         Category("message_send", Risk.HIGH, "Enviar mensagens ou e-mails"),
         Category("config_change", Risk.HIGH, "Alterar configurações importantes"),
         Category("code_execution", Risk.HIGH, "Executar código ou comandos"),
@@ -122,15 +136,16 @@ BUILTIN_TOOL_CATEGORIES: Dict[str, str] = {
     "kg_add_relation": "memory_write",
     "web_search": "external_request",
     "weather": "external_request",
-    "http_request": "external_request",
+    "http_request": "external_action",
     "browser_navigate": "external_request",
     "browser_extract": "external_request",
     "browser_screenshot": "external_request",
     "browser_axtree": "external_request",
-    "browser_click": "external_request",
-    "browser_type": "external_request",
-    "file_write": "file_organize",
-    "apply_patch": "file_organize",
+    "browser_click": "external_action",
+    "browser_type": "external_action",
+    # Native file tools are not confined to JARVIS-LifeOS: treat as high risk.
+    "file_write": "file_modify",
+    "apply_patch": "file_modify",
     "schedule_task": "schedule",
     "pause_scheduled_task": "schedule",
     "resume_scheduled_task": "schedule",
@@ -253,9 +268,11 @@ def describe_policy(level: AutonomyLevel | int, grants: Iterable[str]) -> str:
                 "Monitore objetivos e proponha iniciativas quando houver motivo concreto."
             )
     lines.append(
-        "Sempre exigem confirmação: envio de mensagens, exclusões, mudanças de "
-        "configuração, execução de código. Nunca execute compras, pagamentos ou "
-        "movimentações financeiras sem confirmação explícita."
+        "Sempre exigem confirmação: envio de mensagens, exclusões, modificação "
+        "de documentos existentes, operações externas sensíveis, mudanças de "
+        "configuração e execução de código. Nunca execute compras, pagamentos ou "
+        "movimentações financeiras sem confirmação explícita. Arquivos: somente "
+        "dentro de JARVIS-LifeOS, respeitando a permissão de cada pasta."
     )
     return " ".join(lines)
 

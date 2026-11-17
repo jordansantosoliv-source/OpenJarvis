@@ -12,7 +12,7 @@ from openjarvis.lifeos.service import get_lifeos, reset_default_lifeos
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("OPENJARVIS_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("JARVIS_LIFEOS_HOME", str(tmp_path / "home"))
     reset_default_lifeos()
     yield tmp_path / "home"
     reset_default_lifeos()
@@ -28,8 +28,8 @@ def _cli(*args, input=None):
 def test_cli_end_to_end(home):
     r = _cli("init")
     assert r.exit_code == 0, r.output
-    assert (home / "lifeos" / "lifeos.toml").exists()
-    assert (home / "lifeos" / "persona.md").exists()
+    assert (home / "config" / "lifeos.toml").exists()
+    assert (home / "config" / "persona.md").exists()
 
     assert (
         _cli("add", "goal", "title=Passar em Cálculo", "horizon=short").exit_code == 0

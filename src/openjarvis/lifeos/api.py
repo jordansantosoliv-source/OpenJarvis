@@ -29,9 +29,12 @@ def _guarded(fn, *args, **kwargs):
     from openjarvis.lifeos.memory import LifeOSMemoryError, MemoryConflict
     from openjarvis.lifeos.planner import PlannerError
     from openjarvis.lifeos.service import LifeOSError
+    from openjarvis.lifeos.workspace import WorkspaceError
 
     try:
         return fn(*args, **kwargs)
+    except WorkspaceError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from None
     except MemoryConflict as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from None
     except (LifeOSError, LifeOSMemoryError, PlannerError, ValueError, KeyError) as exc:
@@ -77,6 +80,32 @@ def create_lifeos_router() -> APIRouter:
     @api.get("/status")
     def status() -> Dict[str, Any]:
         return _lifeos().status()
+
+    @api.get("/system")
+    def system(request: Request) -> Dict[str, Any]:
+        """Real CPU/RAM usage and model state (Ollama /api/ps when available)."""
+        from openjarvis.lifeos.system import snapshot
+
+        state = request.app.state
+        data = snapshot(
+            getattr(state, "engine", None),
+            getattr(state, "engine_name", ""),
+            getattr(state, "model", ""),
+        )
+        speech = getattr(state, "speech_backend", None)
+        try:
+            data["speech_input"] = bool(speech is not None and speech.health())
+        except Exception:
+            data["speech_input"] = False
+        return data
+
+    @api.get("/files")
+    def files(path: str = "") -> List[Dict[str, Any]]:
+        return _guarded(_lifeos().workspace.list, path)
+
+    @api.post("/backup")
+    def backup(label: str = "") -> Dict[str, Any]:
+        return _lifeos().backup(label)
 
     # -- memory --
     @api.get("/memory")
@@ -190,7 +219,7 @@ def create_lifeos_router() -> APIRouter:
     def review_save(kind: str, body: ReviewIn) -> Dict[str, Any]:
         lo = _lifeos()
         report = _guarded(lo.reviews.build, kind, notes=body.notes)
-        rid = lo.reviews.save(report, notes=body.notes)
+        rid = lo.save_review(report, notes=body.notes)
         lo.actions.record(
             actor="user_ui",
             action=f"review_{kind}",

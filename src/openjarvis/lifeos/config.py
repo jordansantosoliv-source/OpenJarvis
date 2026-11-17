@@ -1,24 +1,45 @@
 # ruff: noqa: E501
 """LifeOS configuration, kept separate from OpenJarvis' ``config.toml``.
 
-The file lives at ``<openjarvis-home>/lifeos/lifeos.toml`` (``OPENJARVIS_HOME``
-is honored through :func:`openjarvis.core.paths.get_config_dir`). Missing
-keys fall back to the defaults below, unknown keys are rejected so typos are
-noticed instead of silently ignored.
+Everything LifeOS owns lives in one dedicated directory::
+
+    JARVIS-LifeOS/            ($JARVIS_LIFEOS_HOME, default ~/JARVIS-LifeOS)
+    ├── config/               lifeos.toml, persona.md
+    ├── memory/               lifeos.db (SQLite)
+    ├── workspace/            files JARVIS may organize
+    ├── research/             research notes and sources
+    ├── reports/              archived reviews (Markdown)
+    ├── logs/                 action log mirror (JSONL)
+    ├── backups/              timestamped backups
+    └── interface/            reserved for interface assets
+
+The OpenJarvis ``config.toml`` is never written by LifeOS. Missing keys fall
+back to the defaults below; unknown keys are rejected so typos are noticed.
 """
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 import tomllib
 
-from openjarvis.core.paths import get_config_dir
-
-LIFEOS_DIR_NAME = "lifeos"
+HOME_ENV = "JARVIS_LIFEOS_HOME"
+DEFAULT_DIR_NAME = "JARVIS-LifeOS"
 CONFIG_FILE_NAME = "lifeos.toml"
+FOLDERS = (
+    "config",
+    "memory",
+    "workspace",
+    "research",
+    "reports",
+    "logs",
+    "backups",
+    "interface",
+)
+PERMISSIONS = ("none", "read", "write")
 
 
 class LifeOSConfigError(ValueError):
@@ -26,8 +47,31 @@ class LifeOSConfigError(ValueError):
 
 
 def get_lifeos_dir() -> Path:
-    """Directory holding every LifeOS file (database, persona, config)."""
-    return get_config_dir() / LIFEOS_DIR_NAME
+    """Root of the dedicated JARVIS-LifeOS directory."""
+    custom = os.environ.get(HOME_ENV, "").strip()
+    return Path(custom).expanduser() if custom else Path.home() / DEFAULT_DIR_NAME
+
+
+def config_file_path() -> Path:
+    return get_lifeos_dir() / "config" / CONFIG_FILE_NAME
+
+
+@dataclass(slots=True)
+class FoldersConfig:
+    """What the agent's file tool may do in each folder: none, read, write.
+
+    Deleting or overwriting existing files always requires confirmation, even
+    in ``write`` folders. Paths outside JARVIS-LifeOS are never reachable.
+    """
+
+    config: str = "read"
+    memory: str = "none"
+    workspace: str = "write"
+    research: str = "write"
+    reports: str = "write"
+    logs: str = "read"
+    backups: str = "none"
+    interface: str = "read"
 
 
 @dataclass(slots=True)
@@ -59,24 +103,44 @@ class LifeOSConfig:
     persona_path: str = ""
     language: str = "pt-BR"
     user_name: str = ""
-    autonomy_level: int = 2
+    autonomy_level: int = 3
     memory_context_limit: int = 8
+    root: str = ""
     semantic: SemanticConfig = field(default_factory=SemanticConfig)
     review: ReviewConfig = field(default_factory=ReviewConfig)
+    folders: FoldersConfig = field(default_factory=FoldersConfig)
+
+    def resolved_root(self) -> Path:
+        return Path(self.root).expanduser() if self.root else get_lifeos_dir()
+
+    def folder(self, name: str) -> Path:
+        if name not in FOLDERS:
+            raise LifeOSConfigError(f"pasta desconhecida '{name}'")
+        return self.resolved_root() / name
+
+    def folder_permission(self, name: str) -> str:
+        return getattr(self.folders, name) if name in FOLDERS else "none"
 
     def resolved_db_path(self) -> Path:
         return (
             Path(self.db_path).expanduser()
             if self.db_path
-            else (get_lifeos_dir() / "lifeos.db")
+            else self.folder("memory") / "lifeos.db"
         )
 
     def resolved_persona_path(self) -> Path:
         return (
             Path(self.persona_path).expanduser()
             if self.persona_path
-            else (get_lifeos_dir() / "persona.md")
+            else self.folder("config") / "persona.md"
         )
+
+    def ensure_layout(self) -> Path:
+        """Create the dedicated directory tree (idempotent, never deletes)."""
+        root = self.resolved_root()
+        for name in FOLDERS:
+            (root / name).mkdir(parents=True, exist_ok=True)
+        return root
 
 
 def _apply(target: Any, data: Dict[str, Any], where: str) -> None:
@@ -114,12 +178,17 @@ def validate_config(cfg: LifeOSConfig) -> None:
         raise LifeOSConfigError("review.habit_min_rate must be between 0 and 1")
     if r.max_alerts < 1:
         raise LifeOSConfigError("review.max_alerts must be >= 1")
+    for name in FOLDERS:
+        if getattr(cfg.folders, name) not in PERMISSIONS:
+            raise LifeOSConfigError(
+                f"folders.{name} must be one of: {', '.join(PERMISSIONS)}"
+            )
 
 
 def load_lifeos_config(path: Optional[Path] = None) -> LifeOSConfig:
     """Load ``lifeos.toml``; return defaults when the file does not exist."""
     cfg = LifeOSConfig()
-    path = path or (get_lifeos_dir() / CONFIG_FILE_NAME)
+    path = path or config_file_path()
     if path.exists():
         try:
             data = tomllib.loads(path.read_text(encoding="utf-8"))
@@ -137,7 +206,9 @@ language = "pt-BR"
 user_name = ""
 
 # 1 = consultivo, 2 = assistido, 3 = autorizado, 4 = proativo
-autonomy_level = 2
+# No nível 3, só as categorias pré-autorizadas executam sem confirmação
+# (padrão: relatórios, organização dentro das pastas permitidas, pesquisas).
+autonomy_level = 3
 
 # Quantos registros de memória entram no contexto de cada pedido
 memory_context_limit = 8
@@ -156,6 +227,19 @@ due_soon_days = 3
 stale_project_days = 14
 habit_min_rate = 0.5
 max_alerts = 7
+
+[folders]
+# Permissão da ferramenta de arquivos do JARVIS em cada pasta de JARVIS-LifeOS:
+# "none", "read" ou "write". Excluir ou sobrescrever arquivos SEMPRE pede
+# confirmação. Fora de JARVIS-LifeOS o JARVIS não tem acesso.
+config = "read"
+memory = "none"
+workspace = "write"
+research = "write"
+reports = "write"
+logs = "read"
+backups = "none"
+interface = "read"
 """
 
 
@@ -163,7 +247,7 @@ def write_default_config(
     path: Optional[Path] = None, *, overwrite: bool = False
 ) -> Path:
     """Write the commented default ``lifeos.toml``; never clobbers silently."""
-    path = path or (get_lifeos_dir() / CONFIG_FILE_NAME)
+    path = path or config_file_path()
     if path.exists() and not overwrite:
         return path
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -175,10 +259,13 @@ def write_default_config(
 
 
 __all__ = [
+    "FOLDERS",
+    "FoldersConfig",
     "LifeOSConfig",
     "LifeOSConfigError",
     "ReviewConfig",
     "SemanticConfig",
+    "config_file_path",
     "get_lifeos_dir",
     "load_lifeos_config",
     "write_default_config",

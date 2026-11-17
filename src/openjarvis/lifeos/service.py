@@ -33,7 +33,9 @@ from openjarvis.lifeos.reviews import ReviewEngine
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_GRANTS = ("report",)
+# Executed without confirmation at levels 3-4: reports, organizing files
+# inside the permitted JARVIS-LifeOS folders, and read-only web research.
+DEFAULT_GRANTS = ("report", "file_organize", "external_request")
 
 
 class LifeOSError(RuntimeError):
@@ -67,13 +69,17 @@ class LifeOS:
         embedder: Any = None,
     ) -> None:
         self.config = config or load_lifeos_config()
+        self.root = self.config.ensure_layout()
         self.db = LifeOSDB(self.config.resolved_db_path())
         self.memory = MemoryStore(
             self.db, embedder if embedder is not None else _build_embedder(self.config)
         )
         self.planner = Planner(self.db)
         self.reviews = ReviewEngine(self.db, self.planner, self.config.review)
-        self.actions = ActionLog(self.db)
+        self.actions = ActionLog(self.db, log_dir=self.config.folder("logs"))
+        from openjarvis.lifeos.workspace import Workspace
+
+        self.workspace = Workspace(self.config)
         self.persona_path = ensure_persona_file(self.config.resolved_persona_path())
         if self.db.get_meta("initialized_at") is None:
             self.db.set_meta("initialized_at", utc_now())
@@ -427,8 +433,75 @@ class LifeOS:
         )
         return path
 
+    # -- reports & backups ---------------------------------------------------
+
+    def save_review(self, report: Any, notes: str = "") -> int:
+        """Archive a review in the database and as Markdown in reports/."""
+        review_id = self.reviews.save(report, notes=notes)
+        target = self.config.folder("reports") / f"{report.kind}-{report.period_key}.md"
+        text = report.text + (
+            f"\n\n## Observações\n{notes.strip()}\n" if notes.strip() else "\n"
+        )
+        tmp = target.with_name(target.name + ".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(target)
+        return review_id
+
+    def backup(self, label: str = "") -> Dict[str, Any]:
+        """Copy database, LifeOS config, persona and the OpenJarvis config.toml.
+
+        Originals are only read. Each backup goes to its own timestamped folder
+        in backups/, so earlier backups are never overwritten.
+        """
+        import re
+        import shutil
+        from datetime import datetime
+
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        safe = re.sub(r"[^A-Za-z0-9_-]+", "-", label).strip("-")[:40]
+        target = self.config.folder("backups") / (f"{stamp}-{safe}" if safe else stamp)
+        suffix = 1
+        base = target
+        while target.exists():
+            suffix += 1
+            target = base.with_name(f"{base.name}-{suffix}")
+        target.mkdir(parents=True)
+        files = [self.db.backup_to(target / "lifeos.db").name]
+        from openjarvis.lifeos.config import config_file_path
+
+        extra = [config_file_path(), self.persona_path]
+        try:
+            from openjarvis.core.config import get_config_path
+
+            extra.append(get_config_path())
+        except Exception:
+            pass
+        names = {0: None, 1: None, 2: "openjarvis-config.toml"}
+        for index, source in enumerate(extra):
+            source = Path(source)
+            if source.is_file():
+                dest = target / (names.get(index) or source.name)
+                shutil.copy2(source, dest)
+                files.append(dest.name)
+        self.actions.record(
+            actor="user",
+            action="backup",
+            category="report",
+            risk="low",
+            autonomy_level=int(self.autonomy_level),
+            decision="executed",
+            params={"label": label},
+            result=str(target),
+            success=True,
+        )
+        return {"path": str(target), "files": files}
+
     def wipe(self, *, keep_audit: bool = True) -> Dict[str, int]:
-        """Delete personal data. The audit log is kept unless asked otherwise."""
+        """Delete personal data after an automatic backup.
+
+        The audit log is kept unless asked otherwise.
+        """
+        self.backup("antes-de-apagar")
         tables = [
             "conversations",
             "reviews",

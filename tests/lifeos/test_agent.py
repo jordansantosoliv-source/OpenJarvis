@@ -58,6 +58,7 @@ def test_authorized_level_executes_granted_category(lifeos):
 
 
 def test_assisted_level_queues_pending_action(lifeos):
+    lifeos.set_autonomy_level(2)
     agent, engine = _agent(
         lifeos,
         [
@@ -94,6 +95,7 @@ def test_interactive_approval_callback(lifeos):
 
 
 def test_generic_confirm_callback_does_not_bypass_policy(lifeos):
+    lifeos.set_autonomy_level(2)
     agent, _ = _agent(
         lifeos,
         [{"content": "", "tool_calls": [ADD_TASK]}, {"content": "x"}],
@@ -136,7 +138,7 @@ def test_system_prompt_has_persona_rules_memory_and_snapshot(lifeos):
     assert "JARVIS" in text and "Nunca usar emojis" in text
     assert "prova de cálculo" in text
     assert "Tarefa atrasada" in text
-    assert "Nível de autonomia: 2" in text
+    assert "Nível de autonomia: 3" in text
 
 
 def test_conversation_persists_and_is_replayed(lifeos):

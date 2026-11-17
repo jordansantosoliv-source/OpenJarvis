@@ -11,9 +11,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from openjarvis.lifeos.db import LifeOSDB, utc_now
+
+logger = logging.getLogger(__name__)
 
 GENESIS_HASH = "0" * 64
 _MAX_FIELD_CHARS = 4000
@@ -43,8 +47,21 @@ _HASHED_FIELDS = (
 
 
 class ActionLog:
-    def __init__(self, db: LifeOSDB) -> None:
+    def __init__(self, db: LifeOSDB, *, log_dir: Optional[Path] = None) -> None:
         self._db = db
+        self._log_dir = Path(log_dir) if log_dir else None
+
+    def _mirror(self, entry: Dict[str, Any]) -> None:
+        """Append the entry to logs/actions-YYYY-MM.jsonl (best effort)."""
+        if self._log_dir is None:
+            return
+        try:
+            self._log_dir.mkdir(parents=True, exist_ok=True)
+            path = self._log_dir / f"actions-{entry['ts'][:7]}.jsonl"
+            with path.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except OSError as exc:
+            logger.warning("LifeOS: could not write action log mirror: %s", exc)
 
     def record(
         self,
@@ -85,7 +102,9 @@ class ActionLog:
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (*[fields[k] for k in _HASHED_FIELDS], prev, digest),
             )
-            return int(cur.lastrowid)
+            entry_id = int(cur.lastrowid)
+        self._mirror({"id": entry_id, **fields, "hash": digest})
+        return entry_id
 
     def list(
         self, *, limit: int = 50, decision: Optional[str] = None

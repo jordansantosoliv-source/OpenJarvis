@@ -58,6 +58,7 @@ def _guard(fn):
             LifeOSMemoryError,
             MemoryConflict,
             PlannerError,
+            PermissionError,
             ValueError,
         ) as exc:
             raise click.ClickException(str(exc)) from None
@@ -84,6 +85,7 @@ def init(force_config: bool) -> None:
 
     cfg_path = write_default_config(overwrite=force_config)
     lo = _lifeos()
+    click.echo(f"Pasta:        {lo.root}")
     click.echo(f"Configuração: {cfg_path}")
     click.echo(f"Persona:      {lo.persona_path}")
     click.echo(f"Banco:        {lo.db.path}")
@@ -469,7 +471,7 @@ def review(kind, notes, save) -> None:
     report = lo.reviews.build(kind, notes=notes)
     click.echo(report.text)
     if save:
-        rid = lo.reviews.save(report, notes=notes)
+        rid = lo.save_review(report, notes=notes)
         lo.actions.record(
             actor="user",
             action=f"review_{kind}",
@@ -604,6 +606,30 @@ def audit(limit, verify) -> None:
 
 
 # -- data & persona --------------------------------------------------------------
+
+
+@lifeos.command()
+@click.option("--label", default="", help="Rótulo do backup.")
+@_guard
+def backup(label) -> None:
+    """Backup do banco, configurações LifeOS, persona e config.toml do OpenJarvis."""
+    out = _lifeos().backup(label)
+    click.echo(f"Backup criado: {out['path']}")
+    for name in out["files"]:
+        click.echo(f"  {name}")
+
+
+@lifeos.command()
+@click.argument("path", default="")
+@_guard
+def files(path) -> None:
+    """Listar pastas e arquivos de JARVIS-LifeOS (com permissões)."""
+    for entry in _lifeos().workspace.list(path):
+        if "permission" in entry:
+            click.echo(f"{entry['name']:10} [{entry['permission']}]")
+        else:
+            size = "" if entry["size"] is None else f"{entry['size']} B"
+            click.echo(f"{entry['path']}  {entry['type']} {size}")
 
 
 @lifeos.command()
