@@ -110,7 +110,9 @@ def client(home):
         ]
     )
     app = create_app(engine, "fake-model")
-    with TestClient(app) as c:
+    with TestClient(
+        app, base_url="http://127.0.0.1:8000", headers={"X-JARVIS-LifeOS": "1"}
+    ) as c:
         yield c
 
 

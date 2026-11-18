@@ -116,7 +116,8 @@ Voz usa os endpoints existentes do OpenJarvis: `/v1/speech/transcribe`
 quando o servidor não tem backend de voz configurado. O reconhecimento de
 voz do navegador não é usado porque envia áudio para a nuvem.
 
-Se `server.api_key` estiver definido, informe a chave no botão ⚙.
+Se o servidor exigir chave de API (variável `OPENJARVIS_API_KEY` ou
+`[server.auth] api_key` no `config.toml`), informe a chave no botão ⚙.
 
 ### Organização
 
@@ -306,11 +307,38 @@ Chaves desconhecidas geram erro (evita erros de digitação silenciosos).
 
 ## API HTTP
 
-Prefixo `/v1/lifeos` (protegido por `server.api_key` quando definido):
-`status`, `memory`, `items/{kind}`, `tasks/{id}/done`, `habits/{id}/log`,
-`alerts`, `reviews`, `reviews/{kind}`, `autonomy`, `grants/{category}`,
-`approvals`, `approvals/{id}/approve|deny`, `audit`, `sessions`, `chat`.
+Prefixo `/v1/lifeos`: `status`, `system`, `files`, `backup`, `memory`,
+`items/{kind}`, `tasks/{id}/done`, `habits/{id}/log`, `alerts`, `reviews`,
+`reviews/{kind}`, `autonomy`, `grants/{category}`, `approvals`,
+`approvals/{id}/approve|deny`, `audit`, `sessions`, `chat`.
 Documentação interativa em `/docs` quando `jarvis serve` está ativo.
+
+### Chave de API
+
+Quando `OPENJARVIS_API_KEY` (ou `[server.auth] api_key` no `config.toml`)
+está definida, todas as rotas `/v1/*` exigem `Authorization: Bearer <chave>`.
+
+### Proteção contra requisições forjadas (CSRF) e DNS rebinding
+
+Vale para `/lifeos` e `/v1/lifeos/*`, com ou sem chave de API:
+
+1. **Host local.** O cabeçalho `Host` precisa ser `localhost`, `127.0.0.1`
+   ou `::1`. Para acessar pela rede local, libere nomes explicitamente em
+   `JARVIS_LIFEOS_ALLOWED_HOSTS` (separados por vírgula).
+2. **Cabeçalho obrigatório em alterações.** POST, PUT, PATCH e DELETE
+   exigem `X-JARVIS-LifeOS: 1`. A central de comando envia automaticamente;
+   scripts precisam enviar também, por exemplo:
+
+   ```powershell
+   Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/v1/lifeos/backup -Headers @{ "X-JARVIS-LifeOS" = "1" }
+   ```
+
+3. **Origem conferida.** Pedidos com `Origin` diferente do servidor,
+   `Origin: null` ou `Sec-Fetch-Site: cross-site` são recusados com `403`.
+
+Leituras (GET) não exigem o cabeçalho, mas seguem a regra de Host. As rotas
+do próprio OpenJarvis não são afetadas; para elas, a defesa é definir
+`OPENJARVIS_API_KEY`.
 
 ## Arquitetura
 

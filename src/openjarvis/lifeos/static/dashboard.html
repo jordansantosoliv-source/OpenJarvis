@@ -253,7 +253,7 @@ function log(msg, err=false){
   $("logs").prepend(d); while ($("logs").childNodes.length > 60) $("logs").lastChild.remove();
 }
 function toast(msg, err=false){ const t=$("toast"); t.textContent=msg; t.className="toast"+(err?" err":""); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.add("hidden"),4200); }
-function headers(json=true){ const h = json ? {"Content-Type":"application/json"} : {}; const k = store.get("lifeos.apikey"); if (k) h.Authorization = "Bearer " + k; return h; }
+function headers(json=true){ const h = json ? {"Content-Type":"application/json"} : {}; h["X-JARVIS-LifeOS"] = "1"; const k = store.get("lifeos.apikey"); if (k) h.Authorization = "Bearer " + k; return h; }
 async function api(path, opts={}, base="/v1/lifeos"){
   const t0 = performance.now();
   const res = await fetch(base + path, {...opts, headers: headers(!(opts.body instanceof FormData)), body: opts.body && !(opts.body instanceof FormData) ? JSON.stringify(opts.body) : opts.body});
@@ -498,7 +498,7 @@ VIEWS.audit = { title:"Auditoria",
     $("au-table").innerHTML = `<tr><th>#</th><th>Quando (UTC)</th><th>Ator</th><th>Ação</th><th>Categoria</th><th>Decisão</th><th>Resultado</th></tr>` + a.entries.map(e => `<tr><td class="mono">${e.id}</td><td class="mono">${esc(e.ts.slice(0,19).replace("T"," "))}</td><td>${esc(e.actor)}</td><td class="mono">${esc(e.action)}</td><td>${esc(e.category)}</td><td>${esc(e.decision)}${e.success === 0 ? ' <span class="tag high">falha</span>' : ""}</td><td class="m">${esc((e.result||"").slice(0,140))}</td></tr>`).join(""); } };
 
 VIEWS.settings = { title:"Conexão",
-  html:() => `<p class="m">Se o servidor exigir chave (server.api_key no config.toml), informe-a. Fica só neste navegador.</p><div class="row"><input id="s-key" type="password" placeholder="Chave de API (opcional)" aria-label="Chave de API"><button class="btn" id="s-save">Salvar</button></div>`,
+  html:() => `<p class="m">Se o servidor exigir chave (variável OPENJARVIS_API_KEY ou [server.auth] api_key no config.toml), informe-a. Fica só neste navegador.</p><div class="row"><input id="s-key" type="password" placeholder="Chave de API (opcional)" aria-label="Chave de API"><button class="btn" id="s-save">Salvar</button></div>`,
   init(){ $("s-save").onclick = () => { store.set("lifeos.apikey", $("s-key").value); toast("Chave salva."); refreshAll(); pollSystem(); }; },
   async load(){} };
 

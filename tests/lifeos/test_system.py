@@ -84,7 +84,9 @@ def test_system_endpoint(tmp_path):
     from openjarvis.server.app import create_app
 
     app = create_app(FakeEngine([{"content": "x"}]), "fake-model")
-    with TestClient(app) as client:
+    with TestClient(
+        app, base_url="http://127.0.0.1:8000", headers={"X-JARVIS-LifeOS": "1"}
+    ) as client:
         data = client.get("/v1/lifeos/system").json()
         assert data["resources"]["ram_total_gb"] > 0
         assert data["model"]["model"] == "fake-model"

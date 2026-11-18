@@ -3,20 +3,82 @@
 Mounted by ``openjarvis.server.app.create_app``. ``/v1/*`` routes inherit
 the server's API-key middleware; the dashboard page itself holds no data and
 reads everything through the API.
+
+Cross-site request protection (independent of the API key)
+----------------------------------------------------------
+Every LifeOS route checks :func:`verify_request`:
+
+* ``Host`` must be a loopback name (``localhost``, ``127.0.0.1``, ``::1``)
+  or listed in ``JARVIS_LIFEOS_ALLOWED_HOSTS``. Blocks DNS rebinding, where a
+  hostile domain resolves to 127.0.0.1 and becomes "same origin".
+* State-changing methods (POST, PUT, PATCH, DELETE) must carry the header
+  ``X-JARVIS-LifeOS: 1``. Browsers cannot attach a custom header to a
+  cross-site request without a CORS preflight, which unlisted origins fail;
+  HTML forms and image tags cannot send it at all.
+* When the browser reports ``Sec-Fetch-Site: cross-site`` or an ``Origin``
+  that differs from ``Host``, state-changing requests are refused.
 """
 
 from __future__ import annotations
 
+import os
 import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlsplit
 
-from fastapi import APIRouter, Body, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 _STATIC = Path(__file__).parent / "static"
 _CHAT_LOCK = threading.Lock()
+
+CSRF_HEADER = "X-JARVIS-LifeOS"
+ALLOWED_HOSTS_ENV = "JARVIS_LIFEOS_ALLOWED_HOSTS"
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+_UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+
+def _allowed_hosts() -> frozenset:
+    extra = os.environ.get(ALLOWED_HOSTS_ENV, "")
+    return _LOOPBACK_HOSTS | {h.strip().lower() for h in extra.split(",") if h.strip()}
+
+
+def _hostname(netloc: str) -> str:
+    """Host name without port; handles ``[::1]:8000`` style IPv6."""
+    netloc = (netloc or "").strip().lower()
+    if netloc.startswith("["):
+        end = netloc.find("]")
+        return netloc[1:end] if end != -1 else ""
+    if netloc.count(":") == 1:
+        return netloc.split(":", 1)[0]
+    return netloc
+
+
+def _forbidden(reason: str) -> HTTPException:
+    return HTTPException(status_code=403, detail=f"Requisição recusada: {reason}")
+
+
+def verify_request(request: Request) -> None:
+    """Reject DNS-rebinding and cross-site state-changing requests."""
+    host = request.headers.get("host", "")
+    if _hostname(host) not in _allowed_hosts():
+        raise _forbidden(
+            f"host '{host}' não permitido (use localhost/127.0.0.1 ou "
+            f"configure {ALLOWED_HOSTS_ENV})"
+        )
+    if request.method.upper() not in _UNSAFE_METHODS:
+        return
+    if request.headers.get(CSRF_HEADER) != "1":
+        raise _forbidden(f"cabeçalho {CSRF_HEADER} ausente")
+    if request.headers.get("sec-fetch-site", "").lower() == "cross-site":
+        raise _forbidden("pedido originado em outro site")
+    origin = request.headers.get("origin")
+    if origin is not None:
+        origin_netloc = urlsplit(origin).netloc.lower() if origin != "null" else ""
+        if not origin_netloc or origin_netloc != host.strip().lower():
+            raise _forbidden(f"origem '{origin}' diferente do servidor")
 
 
 def _lifeos() -> Any:
@@ -69,12 +131,13 @@ class ReviewIn(BaseModel):
 
 
 def create_lifeos_router() -> APIRouter:
-    router = APIRouter()
+    router = APIRouter(dependencies=[Depends(verify_request)])
 
     @router.get("/lifeos", response_class=HTMLResponse, include_in_schema=False)
     def dashboard() -> HTMLResponse:
         return HTMLResponse((_STATIC / "dashboard.html").read_text(encoding="utf-8"))
 
+    # verify_request is inherited from ``router`` when ``api`` is included.
     api = APIRouter(prefix="/v1/lifeos", tags=["lifeos"])
 
     @api.get("/status")
@@ -343,4 +406,4 @@ def create_lifeos_router() -> APIRouter:
     return router
 
 
-__all__ = ["create_lifeos_router"]
+__all__ = ["CSRF_HEADER", "create_lifeos_router", "verify_request"]
