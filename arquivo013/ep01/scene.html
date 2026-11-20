@@ -1,0 +1,57 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:'Bebas Neue';src:url(../node_modules/@fontsource/bebas-neue/files/bebas-neue-latin-400-normal.woff2) format('woff2');font-weight:400}
+@font-face{font-family:'Oswald';src:url(../node_modules/@fontsource/oswald/files/oswald-latin-600-normal.woff2) format('woff2');font-weight:600}
+@font-face{font-family:'Oswald';src:url(../node_modules/@fontsource/oswald/files/oswald-latin-700-normal.woff2) format('woff2');font-weight:700}
+@font-face{font-family:'Courier Prime';src:url(../node_modules/@fontsource/courier-prime/files/courier-prime-latin-700-normal.woff2) format('woff2');font-weight:700}
+@font-face{font-family:'Special Elite';src:url(../node_modules/@fontsource/special-elite/files/special-elite-latin-400-normal.woff2) format('woff2');font-weight:400}
+html,body{margin:0;padding:0;background:#000;width:1080px;height:1920px;overflow:hidden}
+#wrap{position:relative;width:1080px;height:1920px;overflow:hidden}
+#stage{position:absolute;left:0;top:0}
+.ov{position:absolute;left:0;top:0;pointer-events:none}
+#paperov{width:1080px;height:1920px;mix-blend-mode:multiply;opacity:.22}
+#grain{width:1200px;height:2100px;mix-blend-mode:overlay;opacity:.20}
+#flick{width:1080px;height:1920px;background:#000}
+#lab{position:absolute;left:60px;top:240px;font:600 26px/1 'Oswald';letter-spacing:3px;color:#E8DCC0;background:#7A1F1F;padding:9px 14px 8px;border:3px solid #141414}
+#brand{position:absolute;right:60px;top:232px;font:400 46px/1 'Bebas Neue';letter-spacing:3px;color:rgba(232,220,192,.88);text-shadow:0 0 6px #000,0 0 2px #000}
+#brand b{font-weight:400;color:#c2463c}
+#cap{position:absolute;left:70px;right:150px;bottom:430px}
+#cap .t{font:700 50px/1.52 'Courier Prime';color:#E8DCC0;background:rgba(14,14,16,.9);padding:5px 16px;-webkit-box-decoration-break:clone;box-decoration-break:clone;border-left:8px solid #7A1F1F}
+#cap .hl{background:#7A1F1F;color:#F6EDD8;padding:0 6px}
+</style></head>
+<body><div id="wrap">
+<svg id="stage" width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="gDusk" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#121215"/><stop offset=".42" stop-color="#211a1c"/><stop offset=".62" stop-color="#3e1919"/><stop offset=".78" stop-color="#6e2620"/><stop offset="1" stop-color="#8a3a26"/>
+  </linearGradient>
+  <linearGradient id="gNight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0a0d"/><stop offset="1" stop-color="#23242a"/></linearGradient>
+  <linearGradient id="gOver" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f4045"/><stop offset=".6" stop-color="#76746d"/><stop offset="1" stop-color="#9b968a"/></linearGradient>
+  <linearGradient id="gShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0a0c" stop-opacity="0"/><stop offset=".55" stop-color="#0a0a0c" stop-opacity=".55"/><stop offset="1" stop-color="#0a0a0c" stop-opacity=".92"/></linearGradient>
+  <linearGradient id="gCone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E8DCC0" stop-opacity=".55"/><stop offset="1" stop-color="#E8DCC0" stop-opacity="0"/></linearGradient>
+  <radialGradient id="gLamp"><stop offset="0" stop-color="#E8DCC0" stop-opacity=".75"/><stop offset=".6" stop-color="#E8DCC0" stop-opacity=".25"/><stop offset="1" stop-color="#E8DCC0" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gGlow"><stop offset="0" stop-color="#ffb065" stop-opacity="1"/><stop offset=".35" stop-color="#e0742c" stop-opacity=".55"/><stop offset="1" stop-color="#e0742c" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gRedGlow"><stop offset="0" stop-color="#b8432c" stop-opacity=".9"/><stop offset="1" stop-color="#b8432c" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gVig" cx=".5" cy=".46" r=".78"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".78"/></radialGradient>
+  <filter id="blur6" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+  <filter id="blur18" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="18"/></filter>
+  <pattern id="pPaper" patternUnits="userSpaceOnUse" width="1080" height="1920"><image href="paper.png" width="1080" height="1920"/></pattern>
+  <clipPath id="cWin"><rect x="170" y="280" width="740" height="880"/></clipPath>
+  <clipPath id="cPhoto"><rect x="-95" y="-110" width="190" height="160"/></clipPath>
+</defs>
+<g id="scene"></g>
+<rect y="1060" width="1080" height="860" fill="url(#gShade)"/>
+<rect width="1080" height="1920" fill="url(#gVig)"/>
+<g id="specks"></g>
+<rect id="fade" width="1080" height="1920" fill="#000" opacity="0"/>
+</svg>
+<img id="paperov" class="ov" src="paper.png">
+<img id="grain" class="ov" src="grain.png">
+<div id="flick" class="ov"></div>
+<div id="lab"></div>
+<div id="brand">ARQUIVO <b>013</b></div>
+<div id="cap"></div>
+</div>
+<script src="scenes.js"></script>
+</body></html>

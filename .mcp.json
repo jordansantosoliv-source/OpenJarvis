@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "video-tools": {
+      "command": "python3",
+      "args": [".claude/mcp/video_tools.py"]
+    }
+  }
+}

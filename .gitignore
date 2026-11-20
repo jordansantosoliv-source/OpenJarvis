@@ -89,7 +89,13 @@ docs/superpowers/
 
 # Claude Code project instructions (per-developer)
 CLAUDE.md
-.claude/
+.claude/*
+# Shared Claude Code skills and their helpers are tracked
+!.claude/skills/
+!.claude/scripts/
+!.claude/mcp/
+!.claude/docs/
+!.claude/SKILLS.md
 
 # Tauri auto-generated schemas
 **/src-tauri/gen/schemas/

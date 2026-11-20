@@ -1,0 +1,7 @@
+node_modules/
+voices/
+entrega/
+ep*/build/
+ep*/grain.png
+ep*/paper.png
+__pycache__/

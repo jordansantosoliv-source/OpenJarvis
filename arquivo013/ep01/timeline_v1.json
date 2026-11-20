@@ -1,0 +1,336 @@
+{
+ "fps": 30,
+ "scenes": [
+  {
+   "id": "s1",
+   "dur": 7,
+   "label": "RECONSTRUÇÃO ARTÍSTICA",
+   "caps": [
+    [
+     0.3,
+     "Agosto de 1966. Niterói."
+    ],
+    [
+     2.1,
+     "Dois homens mortos no alto de um morro."
+    ],
+    [
+     4.6,
+     "Com eles, [[máscaras de chumbo]]."
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "boom"
+    ],
+    [
+     4.6,
+     "hit"
+    ]
+   ],
+   "amb": "rain"
+  },
+  {
+   "id": "s2",
+   "dur": 8,
+   "label": "AGENTE 013 É PERSONAGEM FICTÍCIO",
+   "caps": [
+    [
+     0.2,
+     "Este é o [[Arquivo 013]]."
+    ],
+    [
+     1.4,
+     "Manoel Pereira da Cruz e Miguel José Viana."
+    ],
+    [
+     4.6,
+     "Técnicos em eletrônica, de Campos dos Goytacazes."
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "whoosh"
+    ],
+    [
+     1.2,
+     "paper"
+    ],
+    [
+     1.6,
+     "paper"
+    ]
+   ],
+   "amb": "room"
+  },
+  {
+   "id": "s3",
+   "dur": 7,
+   "label": "RECONSTRUÇÃO ARTÍSTICA",
+   "caps": [
+    [
+     0.2,
+     "17 de agosto: chegaram a Niterói."
+    ],
+    [
+     2.5,
+     "Segundo os relatos, compraram capas de chuva"
+    ],
+    [
+     4.9,
+     "e uma garrafa de água."
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "whoosh"
+    ]
+   ],
+   "amb": "room"
+  },
+  {
+   "id": "s4",
+   "dur": 5,
+   "label": "RECONSTRUÇÃO ARTÍSTICA",
+   "caps": [
+    [
+     0.2,
+     "Depois, eles subiram o Morro do Vintém."
+    ],
+    [
+     2.9,
+     "[[E não voltaram.]]"
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "whoosh"
+    ],
+    [
+     2.9,
+     "boom"
+    ]
+   ],
+   "amb": "wind"
+  },
+  {
+   "id": "s5",
+   "dur": 8,
+   "label": "RECONSTRUÇÃO ARTÍSTICA",
+   "caps": [
+    [
+     0.2,
+     "Dias depois, um jovem que soltava pipa encontrou os corpos."
+    ],
+    [
+     3.6,
+     "De terno. De capa de chuva."
+    ],
+    [
+     5.4,
+     "[[Nenhum sinal de violência.]]"
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "whoosh"
+    ],
+    [
+     5.4,
+     "hit"
+    ]
+   ],
+   "amb": "wind"
+  },
+  {
+   "id": "s6",
+   "dur": 11,
+   "label": "TRANSCRIÇÃO • VERSÃO MAIS DIVULGADA",
+   "caps": [
+    [
+     0.2,
+     "Com eles, a polícia achou um bilhete."
+    ],
+    [
+     2.0,
+     "Na versão mais divulgada:"
+    ],
+    [
+     3.4,
+     ""
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "hit"
+    ]
+   ],
+   "amb": "room",
+   "note": {
+    "start": 2.4,
+    "cps": 17,
+    "gap": 0.18,
+    "lines": [
+     "16:30 estar no local",
+     "determinado.",
+     "18:30 ingerir cápsula,",
+     "após efeito proteger",
+     "metais aguardar",
+     "sinal máscara."
+    ]
+   }
+  },
+  {
+   "id": "s7",
+   "dur": 8,
+   "label": "RECONSTRUÇÃO ARTÍSTICA",
+   "caps": [
+    [
+     0.2,
+     "Que cápsula? Que sinal?"
+    ],
+    [
+     1.9,
+     "A causa das mortes [[nunca foi determinada]]."
+    ],
+    [
+     4.5,
+     "Os relatos indicam que não houve exame toxicológico conclusivo."
+    ]
+   ],
+   "sfx": [
+    [
+     2.0,
+     "stamp"
+    ]
+   ],
+   "amb": "clock"
+  },
+  {
+   "id": "s8",
+   "dur": 9,
+   "label": "RECONSTRUÇÃO DE UM RELATO",
+   "caps": [
+    [
+     0.2,
+     "Uma moradora disse à polícia ter visto um objeto laranja sobre o morro"
+    ],
+    [
+     3.6,
+     "na noite de 17 de agosto."
+    ],
+    [
+     5.6,
+     "[[É um depoimento. Não é prova.]]"
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "whoosh"
+    ]
+   ],
+   "amb": "eerie"
+  },
+  {
+   "id": "s9",
+   "dur": 8,
+   "label": "RECONSTRUÇÃO • SEGUNDO DEPOIMENTO",
+   "caps": [
+    [
+     0.2,
+     "Um amigo contou à polícia que os dois se diziam"
+    ],
+    [
+     2.9,
+     "[[\"espiritualistas científicos\"]]"
+    ],
+    [
+     4.7,
+     "e tentavam contato com outros mundos."
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "whoosh"
+    ]
+   ],
+   "amb": "room"
+  },
+  {
+   "id": "s10",
+   "dur": 9,
+   "label": "HIPÓTESES • NENHUMA COMPROVADA",
+   "caps": [
+    [
+     0.2,
+     "Hipóteses: um experimento com alguma substância que deu errado."
+    ],
+    [
+     3.2,
+     "Um crime."
+    ],
+    [
+     4.6,
+     "Ou algo que ninguém explicou."
+    ],
+    [
+     6.6,
+     "[[Nenhuma foi comprovada.]]"
+    ]
+   ],
+   "sfx": [
+    [
+     0.0,
+     "whoosh"
+    ],
+    [
+     3.2,
+     "pin"
+    ],
+    [
+     4.6,
+     "pin"
+    ],
+    [
+     6.6,
+     "stamp"
+    ]
+   ],
+   "amb": "room"
+  },
+  {
+   "id": "s11",
+   "dur": 6,
+   "label": "",
+   "caps": [
+    [
+     0.2,
+     "Sessenta anos depois, o caso segue [[sem solução]]."
+    ],
+    [
+     3.0,
+     "E você: o que eles esperavam ver?"
+    ]
+   ],
+   "sfx": [
+    [
+     1.8,
+     "stamp"
+    ],
+    [
+     5.0,
+     "sting"
+    ]
+   ],
+   "amb": "room"
+  }
+ ]
+}
